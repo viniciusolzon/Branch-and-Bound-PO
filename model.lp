@@ -1,7 +1,7 @@
 \Problem name: 
 
 Minimize
-OBJROW: y_1 + y_2 + y_3 + y_4 + y_5 + y_6
+OBJROW: - y_1 - y_2 - y_3 - y_4 - y_5 - y_6
 Subject To
 constr(0):  x_1_A + x_2_A + x_3_A + x_4_A + x_5_A + x_6_A = 1
 constr(1):  x_1_B + x_2_B + x_3_B + x_4_B + x_5_B + x_6_B = 1

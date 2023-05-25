@@ -1,0 +1,4 @@
+3 2 # 3 variaveis e 2 restrições
+5 10 8 # coeficientes das variaveis na funcao objetivo
+3 5 2 6 # restricao 1
+4 4 4 7 # restricao 2

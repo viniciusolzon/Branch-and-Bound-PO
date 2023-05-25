@@ -1,41 +1,93 @@
 # importação do pacote mip
 from mip import *
 
-def main():
-    A = range(1, 8)
-    D = range(1, 7)
-    M = ['A', 'B', 'C', 'D', 'E', 'F']
-    Ma = {1: ['A', 'B'], 2: ['A', 'E'], 3: ['A', 'C'], 4: ['A', 'F'], 5: ['B', 'D', 'F'], 6: ['C'], 7: ['C', 'D', 'E']}
+# from bnb import BranchAndBound
+
+# class BranchAndBound():
+#     def __init__(self):
+#         self.lower_bound = 999999
+#         self.valorObj = 0
+
+#     def podar(self):
+#         if True:
+#             return True
+#         else:
+#             return False
+
+#     def solve(self):
+#         print("\tBranch and Bound\n\nEscolha o método de exploração da árvore:")
+#         print("(1) Busca em profundidade - Depth First Search")
+#         print("(2) Busca em largura      - Breadth First Search")
+#         escolha = int(input("-> "))
+#         pass
+
+def solve(model):
+  status = model.optimize()
+
+  if status != OptimizationStatus.OPTIMAL:
+    return
+
+  print("Status = ", status)
+  print(f"Solution value  = {model.objective_value:.2f}\n")
   
-    model = Model(sense=MINIMIZE, solver_name=CBC)
+  print("Solution:")
+  for v in model.vars:
+      print(f"{v.name} = {v.x:.2f}")
 
-    x = {d: {m: model.add_var(var_type=BINARY, name=f"x_{d}_{m}") for m in M} for d in D}
-    y = {d: model.add_var(var_type=BINARY, name=f"y_{d}") for d in D}
+# salva modelo em arquivo lp, e mostra o conteúdo
+def save(model, filename):
+  model.write(filename) # salva modelo em arquivo
+  with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
+    print(f.read())
 
-    model.objective = xsum(y[d] for d in D)
+def main():
+    file_path = "src/instance1.txt"
+    f = open(file_path, "r")
+    
+    first_line  = f.readline().split()
+    funcao_obj = f.readline().split()
+    # print(first_line)
+    # print(funcao_obj)
 
-    for m in M:
-        model += xsum(x[d][m] for d in D) == 1
+    num_variaveis = int(first_line[0]) # numero de variaveis (variaveis enumeradas de 1 a n)
+    num_restricoes = int(first_line[1]) # número de restricoes (restricoes enumerados de 1 a n)
+    
+    # print(f"Numero de variaveis = {num_variaveis}")
+    # print(f"Numero de restricoes = {num_restricoes}")
+    # print(f"\n\tMax: ", end = "")
+    # for i in range(len(funcao_obj)):
+    #     print(f"{funcao_obj[i]}x{i+1} + ", end = "")
+    # print()
+    
+    restricoes = []
+    for i in range(num_restricoes):
+        restricoes.append(f.readline().split()) 
+    # print(restricoes)
 
-    for d in D:
-        for a in A:
-            model += xsum(x[d][m] for m in Ma[a]) <= y[d]
+    # print(f"s.a:")
+    # for i in range(num_restricoes):
+    #     for j in range(num_variaveis):
+    #         print(f"{restricoes[i][j]}x{j+1} + ", end = "")
+    #     print(f" <= {restricoes[i][j+1]}")
 
-    # salva modelo em arquivo lp, e mostra o conteúdo
-    model.write("model.lp") # salva modelo em arquivo
-    with open("model.lp", "r") as f: # lê e exibe conteúdo do arquivo
-        print(f.read())
-    status = model.optimize()
+    # print()
 
-    print(f"Status = {status}\n")
-    if status == OptimizationStatus.OPTIMAL:
-        print(f"São necessários no mínimo {int(model.objective_value)} dias para realizar as provas.\n")
 
-        day = 1
-        for d in D:
-            if int(y[d].x) == 1:
-                print(f"Dia {day}: ", ", ".join([m for m in M if int(x[d][m].x) == 1]))
-                day += 1
+    model = Model(sense=MAXIMIZE, solver_name=CBC)
+
+    x = [model.add_var(var_type=CONTINUOUS, lb=0.0, name=f"x_{i+1}") for i in range(num_variaveis)]
+
+    
+    model.objective = xsum([i] for i in funcao_obj * x[j] for j in range(num_variaveis))
+
+    for i in range(num_restricoes):
+        model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
+
+
+    save(model, "modelo1.lp")
+    solve(model)
 
 if __name__ == "__main__":
+    # bnb = BranchAndBound()
+    # bnb.solve()
     main()

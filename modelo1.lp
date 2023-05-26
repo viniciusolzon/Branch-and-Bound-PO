@@ -1,9 +1,14 @@
-\Problem name: 
+\Problem name: Branch and Bound
 
 Minimize
-OBJROW: - x_1 - x_2 - x_3
+OBJROW: -5 x_1 -10 x_2 -8 x_3
 Subject To
 constr(0):  3 x_1 + 5 x_2 + 2 x_3 <= 6
 constr(1):  4 x_1 + 4 x_2 + 4 x_3 <= 7
 Bounds
+ 0 <= x_1 <= 1
+ 0 <= x_2 <= 1
+ 0 <= x_3 <= 1
+Integers
+x_1 x_2 x_3 
 End

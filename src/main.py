@@ -1,6 +1,6 @@
 # importação do pacote mip
 from mip import *
-
+import sys
 # from bnb import BranchAndBound
 
 # class BranchAndBound():
@@ -21,6 +21,12 @@ from mip import *
 #         escolha = int(input("-> "))
 #         pass
 
+# salva modelo em arquivo lp, e mostra o conteúdo
+def save(model, filename):
+  model.write(filename) # salva modelo em arquivo
+  with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
+    print(f.read())
+
 def solve(model):
   status = model.optimize()
 
@@ -34,60 +40,51 @@ def solve(model):
   for v in model.vars:
       print(f"{v.name} = {v.x:.2f}")
 
-# salva modelo em arquivo lp, e mostra o conteúdo
-def save(model, filename):
-  model.write(filename) # salva modelo em arquivo
-  with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
-    print(f.read())
-
 def main():
-    file_path = "src/instance1.txt"
-    f = open(file_path, "r")
-    
-    first_line  = f.readline().split()
-    funcao_obj = f.readline().split()
-    # print(first_line)
-    # print(funcao_obj)
 
-    num_variaveis = int(first_line[0]) # numero de variaveis (variaveis enumeradas de 1 a n)
-    num_restricoes = int(first_line[1]) # número de restricoes (restricoes enumerados de 1 a n)
-    
-    # print(f"Numero de variaveis = {num_variaveis}")
-    # print(f"Numero de restricoes = {num_restricoes}")
-    # print(f"\n\tMax: ", end = "")
-    # for i in range(len(funcao_obj)):
-    #     print(f"{funcao_obj[i]}x{i+1} + ", end = "")
-    # print()
-    
-    restricoes = []
-    for i in range(num_restricoes):
-        restricoes.append(f.readline().split()) 
-    # print(restricoes)
+  ################################
+  ####### Lendo a instancia ######
+  ################################
 
-    # print(f"s.a:")
-    # for i in range(num_restricoes):
-    #     for j in range(num_variaveis):
-    #         print(f"{restricoes[i][j]}x{j+1} + ", end = "")
-    #     print(f" <= {restricoes[i][j+1]}")
+  # file_path = "src/instance1.txt"
+  file_path = sys.argv[1]
+  f = open(file_path, "r")
+  
+  first_line  = f.readline().split()
+  funcao_obj = f.readline().split()
 
-    # print()
+  num_variaveis = int(first_line[0]) # numero de variaveis (variaveis enumeradas de 1 a n)
+  num_restricoes = int(first_line[1]) # número de restricoes (restricoes enumerados de 1 a n)
+  
+  restricoes = []
+  for i in range(num_restricoes):
+      restricoes.append(f.readline().split()) 
 
+  ################################
+  ####### Criando o modelo #######
+  ################################
 
-    model = Model(sense=MAXIMIZE, solver_name=CBC)
+  model = Model(name= "Branch and Bound", sense=MAXIMIZE, solver_name=CBC)
 
-    x = [model.add_var(var_type=CONTINUOUS, lb=0.0, name=f"x_{i+1}") for i in range(num_variaveis)]
+  x = [model.add_var(var_type=BINARY, lb=0.0, name=f"x_{i+1}") for i in range(num_variaveis)]
+  
+  model.objective = xsum(int(funcao_obj[i]) * x[i] for i in range(len(funcao_obj)))
 
-    
-    model.objective = xsum([i] for i in funcao_obj * x[j] for j in range(num_variaveis))
+  for i in range(num_restricoes):
+    model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
 
-    for i in range(num_restricoes):
-        model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
+  save(model, "modelo1.lp")
+  solve(model)
+
+  ################################
+  ########## Algoritmo ###########
+  ################################
 
 
-    save(model, "modelo1.lp")
-    solve(model)
+  
 
 if __name__ == "__main__":
-    # bnb = BranchAndBound()
-    # bnb.solve()
-    main()
+  # bnb = BranchAndBound()
+  # bnb.solve()
+  main()
+# soluções ótimas do teobaldo: 20, 24, 19 e 10

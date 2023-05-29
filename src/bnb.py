@@ -25,9 +25,13 @@ def getBranchVariableIndex(variable_value_list):
         value_list = []
         # lista de variaveis que possuem valores fracionarios
         for value in variable_value_list:
+            print(f"{value} - {int(value)} == {value - int(value)}")
             if (value - int(value)) != 0:
                 value_list.append(value)
 
+        # lista de variaveis que possuem valores fracionarios
+        # value_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
+        
         print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
 
         # escolhe a variavel fracionaria mais proxima de 0,5
@@ -38,7 +42,6 @@ def getBranchVariableIndex(variable_value_list):
 class Node():
     def __init__(self, model):
         self.model = model
-        self.state = 0
 
     def getVariableValueList(self):
         variable_value_list = []
@@ -54,7 +57,8 @@ class Node():
         return True
 
     def isInfeasible(self):
-        if self.state == OptimizationStatus.INFEASIBLE:
+        status = self.model.optimize()
+        if status == OptimizationStatus.INFEASIBLE:
             print("Solucao e inviavel")
             return True
         return False
@@ -83,7 +87,7 @@ class Node():
 
     def solve(self):
         status = self.model.optimize()
-        self.state = status
+
         if status != OptimizationStatus.OPTIMAL:
             return
 
@@ -103,8 +107,8 @@ def solveProblem(baseModel):
     tree.append(root)
 
     # branch and bound
-    for i in range(10):
-    # while len(tree) != 0:
+    # for i in range(25):
+    while len(tree) != 0:
         if choice == 1:
             node = tree[0] # estrategia de busca em largura, vamos pelo primeiro da lista de nos (BFS)
         elif choice == 2:
@@ -118,11 +122,8 @@ def solveProblem(baseModel):
         for i in node.model.constrs:
             print(i)
 
-        print("\n\nVariaveis do pai:")
-        for i in node.model.vars:
-            print(f"{i} = {i.x}")
-
-        if node.state == OptimizationStatus.OPTIMAL:
+        status = node.model.optimize()
+        if status == OptimizationStatus.OPTIMAL:
             # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value > lower_bound:
                 print(f"Atualizamos o lowerbound para {node.model.objective_value}")

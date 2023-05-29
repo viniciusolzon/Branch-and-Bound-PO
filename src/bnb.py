@@ -11,19 +11,29 @@ def save(model, filename):
 
 
 def Integer(variable):
-    if variable - int(variable) == 0:
+    if (variable - int(variable)) == 0:
         return True
-    return False
+    else:
+        return False
 
 
 def proximity(variable):
-    # print(f"Variable = {variable}")
     return abs(variable - 0.5)
 
 
 def getBranchVariableIndex(variable_value_list):
-        # tira todos os valores inteiros e de valor 0 (temporariamente) da lista de valores das variaveis
-        value_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
+        value_list = []
+        # lista de variaveis que possuem valores fracionarios
+        for value in variable_value_list:
+            print(f"{value} - {int(value)} == {value - int(value)}")
+            if (value - int(value)) != 0:
+                value_list.append(value)
+
+        # lista de variaveis que possuem valores fracionarios
+        # value_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
+        
+        print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
+
         # escolhe a variavel fracionaria mais proxima de 0,5
         branch_variable = min(value_list, key=proximity)
         return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
@@ -32,14 +42,19 @@ def getBranchVariableIndex(variable_value_list):
 class Node():
     def __init__(self, model):
         self.model = model
-        self.cost = float("inf")
+
+    def getVariableValueList(self):
+        variable_value_list = []
+        for i in range(len(self.model.vars)):
+            variable_value_list.append(self.model.var_by_name(f"x_{i+1}").x)
+        return variable_value_list
 
     def integralSolution(self):
-        variable_value_list = self.getVariableValueList()
-        non_integer_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
-        if len(non_integer_list) == 0:
-            # print("Poda por integralidade")
-            return True
+        for i in range(len(self.model.vars)):
+            result = self.model.vars[i].x - int(self.model.vars[i].x)
+            if result != 0:
+                return False
+        return True
 
     def isInfeasible(self):
         status = self.model.optimize()
@@ -52,27 +67,23 @@ class Node():
         # INVIABILIDADE
         # se a solução for inviavels podamos
         if self.isInfeasible():
+            print("Solucao e inviavel")
             return True
         print("Solucao e viavel")
        
         # INTEGRALIDADE
         # se a solução for inteira podamos
         if self.integralSolution():
+            print("Solucao e inteira")
             return True
         print("Solucao nao e inteira")
     
         # LIMITANTE
         # se a solução for inteira e possuir um valor menor do que o lower bound atual podamos
         if self.integralSolution() and self.model.objective_value <= lb:
-            # print("Poda por limitante")
+            print("Solucao e menor que lower bound")
             return True
         print("Solucao nao e menor que lower bound")
-
-    def getVariableValueList(self):
-        variable_value_list = []
-        for i in range(len(self.model.vars)):
-            variable_value_list.append(self.model.var_by_name(f"x_{i+1}").x)
-        return variable_value_list
 
     def solve(self):
         status = self.model.optimize()
@@ -80,55 +91,80 @@ class Node():
         if status != OptimizationStatus.OPTIMAL:
             return
 
-        print("Status = ", status)
-        print(f"Solution value  = {self.model.objective_value:.2f}\n")
-        
-        print("Solution:")
-        for v in self.model.vars:
-            print(f"{v.name} = {v.x:.2f}")
-        print("###########################################################")
-
 
 def solveProblem(baseModel):
+    print("\t\t##### Branch and Bound #####")
+    print("(1) Busca em Largura")
+    print("(2) Busca em Profundidade")
+    choice = 1
+    choice = int(input("-> "))
 
     root = Node(baseModel)
     best_node = Node(baseModel)
-    best_node.cost = 0 # mesma coisa que o lower_bound ou limite primal
-    
+    lower_bound = 0
+
     tree = []
     tree.append(root)
 
     # branch and bound
+    # for i in range(25):
     while len(tree) != 0:
-        node = tree[-1] # estrategia de busca em profundidade, vamos pelo ultimo no inserido na lista de nos (DFS)
-        node.solve()
-        # save(node.model, "modelo1.lp")
+        if choice == 1:
+            node = tree[0] # estrategia de busca em largura, vamos pelo primeiro da lista de nos (BFS)
+        elif choice == 2:
+            node = tree[-1] # estrategia de busca em profundidade, vamos pelo ultimo da lista de nos (DFS)
         
-        # se satisfazer algum dos tres criterios de poda, ele poda o no atual (tira ele da lista de nos)
-        if not node.toPrune(best_node.model.objective_value):
-            # se a solução for inteira e possuir um valor maior do que a melhor solução existente, atualizamos a melhor
-            if node.integralSolution() and node.model.objective_value >= best_node.model.objective_value:
-                best_node = node
+        # save(node.model, "modelo1.lp")
+        print("***********************************************************************************************")
+        node.solve()
 
+        print("\n\nRestricoes do pai:")
+        for i in node.model.constrs:
+            print(i)
+
+        status = node.model.optimize()
+        if status == OptimizationStatus.OPTIMAL:
+            # tentamos atualizar o lower_bound
+            if node.integralSolution() and node.model.objective_value > lower_bound:
+                print(f"Atualizamos o lowerbound para {node.model.objective_value}")
+                lower_bound = float(node.model.objective_value)
+                best_node.model = node.model.copy()
+
+
+        # se podar for possivel, a gente poda(tira esse no da lista de nos)
+        if node.toPrune(best_node.model.objective_value):
+            print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
+            # print(f"\nTamanho da arvore antes da remocao: {len(tree)}")
+            tree.remove(node)
+            # print(f"Tamanho da arvore depois da remocao: {len(tree)}\n")
+            
+        # se nao puder podar ele, cria dois filhos e inserimos os dois na lista de nos
+        else:       
             # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0,5)
             variable_value_list = node.getVariableValueList()
             branch_variable = getBranchVariableIndex(variable_value_list)
-            
+            print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable]}")
+
             # primeiro filho iguala essa variavel a 0
-            node.model += node.model.vars[branch_variable] == 0
-            tree.append(node)
-            print("\nnRestricoes do filho 1:")
-            for i in node.model.constrs:
+            left_node = Node(node.model.copy())
+            left_node.model += left_node.model.vars[branch_variable] == 0
+            tree.append(left_node)
+            print("\n\nRestricoes do filho 1:")
+            for i in left_node.model.constrs:
                 print(i)
 
             # segundo filho iguala essa variavel a 1
-            node.model.remove(node.model.constrs[-1])
-            node.model += node.model.vars[branch_variable] == 1
-            tree.append(node)
+            right_node = Node(node.model.copy())
+            right_node.model += right_node.model.vars[branch_variable] == 1
+            tree.append(right_node)
             print("\nRestricoes do filho 2:")
-            for i in node.model.constrs:
+            for i in right_node.model.constrs:
                 print(i)
-        else:
-            # print(f"\nArvore antes da remocao: {tree}")
+            
+            # remove o no atual pois ja resolvemos ele
             tree.remove(node)
-            # print(f"\nArvore depois da remocao: {tree}")
+
+        print(f"Valor da solucao do pai = {node.model.objective_value}")
+        
+    # quando todos no da arvore estiverem fechados, mostramos a melhor solucao encontrada
+    print(f"\n\n-> Custo da melhor solucao encontrada = {lower_bound:.4f}\n")

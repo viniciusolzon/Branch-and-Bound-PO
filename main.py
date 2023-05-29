@@ -1,27 +1,27 @@
 from bnb import *
-
-from mip import *
-import numpy as np
 import sys
 
-def solve(model):
-    status = model.optimize()
+# from mip import *
+# import numpy as np
 
-    if status != OptimizationStatus.OPTIMAL:
-        return
+# def solve(model):
+#     status = model.optimize()
 
-    print("Status = ", status)
-    print(f"Solution value  = {model.objective_value:.2f}\n")
+#     if status != OptimizationStatus.OPTIMAL:
+#         return
 
-    print("Solution:")
-    for v in model.vars:
-        print(f"{v.name} = {v.x:.2f}")
-    print("###########################################################")
+#     print("Status = ", status)
+#     print(f"Solution value  = {model.objective_value:.2f}\n")
 
-def save(model, filename):
-    model.write(filename) # salva modelo em arquivo
-    with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
-        print(f.read())
+#     print("Solution:")
+#     for v in model.vars:
+#         print(f"{v.name} = {v.x:.2f}")
+#     print("###########################################################")
+
+# def save(model, filename):
+#     model.write(filename) # salva modelo em arquivo
+#     with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
+#         print(f.read())
 
 def main():
     ################################
@@ -54,14 +54,12 @@ def main():
 
     for i in range(num_restricoes):
         model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
+    
+    for i in range(num_variaveis):
+        model += x[i] <= 1
 
-    # model += x[8] == 1
-    # model += x[5] == 0
-    # model += x[0] == 0
-    # model += x[4] == 0
-
-    # solve(model)
     # save(model, "modelo1.lp")
+    # solve(model)
     
     solveProblem(model)
 
@@ -69,4 +67,3 @@ def main():
 if __name__ == "__main__":
   main()
 # soluções ótimas do teobaldo: 20, 24, 19 e 10
-# unico problema agora e que na instacia 2 de Teobaldo estamos achando o otimo como 25, o resto ta ok

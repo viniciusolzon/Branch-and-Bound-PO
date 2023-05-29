@@ -9,34 +9,27 @@ def save(model, filename):
     with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
         print(f.read())
 
-
 def Integer(variable):
     if (variable - int(variable)) == 0:
         return True
     else:
         return False
 
-
 def proximity(variable):
     return abs(variable - 0.5)
 
+# def getBranchVariableIndex(variable_value_list):
+#         value_list = []
+#         # lista de variaveis que possuem valores fracionarios
+#         for value in variable_value_list:
+#             if (value - int(value)) != 0:
+#                 value_list.append(value)
 
-def getBranchVariableIndex(variable_value_list):
-        value_list = []
-        # lista de variaveis que possuem valores fracionarios
-        for value in variable_value_list:
-            # print(f"{value} - {int(value)} == {value - int(value)}")
-            if (value - int(value)) != 0:
-                value_list.append(value)
+#         print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
 
-        # lista de variaveis que possuem valores fracionarios
-        # value_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
-        
-        print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
-
-        # escolhe a variavel fracionaria mais proxima de 0,5
-        branch_variable = min(value_list, key=proximity)
-        return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
+#         # escolhe a variavel fracionaria mais proxima de 0,5
+#         branch_variable = min(value_list, key=proximity)
+#         return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
 
 
 class Node():
@@ -44,11 +37,30 @@ class Node():
         self.model = model
         self.status = 0
 
-    def getVariableValueList(self):
+    def getBranchVariableIndex(self):
+        # lista de variaveis do problema
         variable_value_list = []
         for i in range(len(self.model.vars)):
             variable_value_list.append(self.model.var_by_name(f"x_{i+1}").x)
-        return variable_value_list
+        
+        value_list = []
+        # lista de variaveis que possuem valores fracionarios
+        for variable in variable_value_list:
+            if (variable - int(variable)) != 0:
+                value_list.append(variable)
+
+        print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
+        
+        # escolhe a variavel fracionaria mais proxima de 0,5
+        branch_variable = min(value_list, key=proximity)
+        
+        return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
+
+    # def getVariableValueList(self):
+    #     variable_value_list = []
+    #     for i in range(len(self.model.vars)):
+    #         variable_value_list.append(self.model.var_by_name(f"x_{i+1}").x)
+    #     return variable_value_list
 
     def integralSolution(self):
         for i in range(len(self.model.vars)):
@@ -58,8 +70,6 @@ class Node():
         return True
 
     def isInfeasible(self):
-        # status = self.model.optimize()
-        # if status == OptimizationStatus.INFEASIBLE:
         if self.state == OptimizationStatus.INFEASIBLE:
             print("Solucao e inviavel")
             return True
@@ -109,7 +119,6 @@ def solveProblem(baseModel):
     tree.append(root)
 
     # branch and bound
-    # for i in range(25):
     while len(tree) != 0:
         if choice == 1:
             node = tree[0] # estrategia de busca em largura, vamos pelo primeiro da lista de nos (BFS)
@@ -124,12 +133,14 @@ def solveProblem(baseModel):
         for i in node.model.constrs:
             print(i)
 
-        # status = node.model.optimize()
-        # if status == OptimizationStatus.OPTIMAL:
+        print("\n\nVariaveis do pai:")
+        for i in node.model.vars:
+            print(i.x)
+
         if node.state == OptimizationStatus.OPTIMAL:
             # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value > lower_bound:
-                print(f"Atualizamos o lowerbound para {node.model.objective_value}")
+                print(f"Atualizamos o lower bound para {node.model.objective_value}")
                 lower_bound = float(node.model.objective_value)
                 best_node.model = node.model.copy()
 
@@ -137,15 +148,14 @@ def solveProblem(baseModel):
         # se podar for possivel, a gente poda(tira esse no da lista de nos)
         if node.toPrune(best_node.model.objective_value):
             print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
-            # print(f"\nTamanho da arvore antes da remocao: {len(tree)}")
             tree.remove(node)
-            # print(f"Tamanho da arvore depois da remocao: {len(tree)}\n")
             
         # se nao puder podar ele, cria dois filhos e inserimos os dois na lista de nos
         else:       
             # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0,5)
-            variable_value_list = node.getVariableValueList()
-            branch_variable = getBranchVariableIndex(variable_value_list)
+            # variable_value_list = node.getVariableValueList()
+            # branch_variable = getBranchVariableIndex(variable_value_list)
+            branch_variable = node.getBranchVariableIndex()
             print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable]}")
 
             # primeiro filho iguala essa variavel a 0

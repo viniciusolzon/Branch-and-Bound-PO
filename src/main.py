@@ -55,8 +55,13 @@ def main():
     for i in range(num_restricoes):
         model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
 
-    # save(model, "modelo1.lp")
+    # model += x[8] == 1
+    # model += x[5] == 0
+    # model += x[0] == 0
+    # model += x[4] == 0
+
     # solve(model)
+    # save(model, "modelo1.lp")
     
     solveProblem(model)
 

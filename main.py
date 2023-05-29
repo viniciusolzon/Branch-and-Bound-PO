@@ -66,4 +66,4 @@ def main():
 
 if __name__ == "__main__":
   main()
-# soluções ótimas do teobaldo: 20, 24, 19 e 10
+# SOLUCAO OTIMA DAS INSTANCIAS TESTE: 20, 24, 19 e 10, RESPECTIVAMENTE

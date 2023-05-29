@@ -25,7 +25,7 @@ def getBranchVariableIndex(variable_value_list):
         value_list = []
         # lista de variaveis que possuem valores fracionarios
         for value in variable_value_list:
-            print(f"{value} - {int(value)} == {value - int(value)}")
+            # print(f"{value} - {int(value)} == {value - int(value)}")
             if (value - int(value)) != 0:
                 value_list.append(value)
 
@@ -42,6 +42,7 @@ def getBranchVariableIndex(variable_value_list):
 class Node():
     def __init__(self, model):
         self.model = model
+        self.status = 0
 
     def getVariableValueList(self):
         variable_value_list = []
@@ -57,8 +58,9 @@ class Node():
         return True
 
     def isInfeasible(self):
-        status = self.model.optimize()
-        if status == OptimizationStatus.INFEASIBLE:
+        # status = self.model.optimize()
+        # if status == OptimizationStatus.INFEASIBLE:
+        if self.state == OptimizationStatus.INFEASIBLE:
             print("Solucao e inviavel")
             return True
         return False
@@ -87,7 +89,7 @@ class Node():
 
     def solve(self):
         status = self.model.optimize()
-
+        self.state = status
         if status != OptimizationStatus.OPTIMAL:
             return
 
@@ -122,8 +124,9 @@ def solveProblem(baseModel):
         for i in node.model.constrs:
             print(i)
 
-        status = node.model.optimize()
-        if status == OptimizationStatus.OPTIMAL:
+        # status = node.model.optimize()
+        # if status == OptimizationStatus.OPTIMAL:
+        if node.state == OptimizationStatus.OPTIMAL:
             # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value > lower_bound:
                 print(f"Atualizamos o lowerbound para {node.model.objective_value}")

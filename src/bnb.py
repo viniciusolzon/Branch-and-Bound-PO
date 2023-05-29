@@ -25,13 +25,9 @@ def getBranchVariableIndex(variable_value_list):
         value_list = []
         # lista de variaveis que possuem valores fracionarios
         for value in variable_value_list:
-            print(f"{value} - {int(value)} == {value - int(value)}")
             if (value - int(value)) != 0:
                 value_list.append(value)
 
-        # lista de variaveis que possuem valores fracionarios
-        # value_list = [i for i in variable_value_list if i != 0 or not Integer(i)]
-        
         print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
 
         # escolhe a variavel fracionaria mais proxima de 0,5
@@ -118,13 +114,13 @@ def solveProblem(baseModel):
         print("***********************************************************************************************")
         node.solve()
 
-        print("\n\nVariaveis do pai:")
-        for i in node.model.vars:
-            print(i.x)
-
         print("\n\nRestricoes do pai:")
         for i in node.model.constrs:
             print(i)
+
+        print("\n\nVariaveis do pai:")
+        for i in node.model.vars:
+            print(f"{i} = {i.x}")
 
         if node.state == OptimizationStatus.OPTIMAL:
             # tentamos atualizar o lower_bound

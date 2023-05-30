@@ -1,34 +1,11 @@
-from bnb import *
 import sys
-
-# from mip import *
-# import numpy as np
-
-# def solve(model):
-#     status = model.optimize()
-
-#     if status != OptimizationStatus.OPTIMAL:
-#         return
-
-#     print("Status = ", status)
-#     print(f"Solution value  = {model.objective_value:.2f}\n")
-
-#     print("Solution:")
-#     for v in model.vars:
-#         print(f"{v.name} = {v.x:.2f}")
-#     print("###########################################################")
-
-# def save(model, filename):
-#     model.write(filename) # salva modelo em arquivo
-#     with open(filename, "r") as f: # lê e exibe conteúdo do arquivo
-#         print(f.read())
+from bnb import *
 
 def main():
     ################################
     ####### Lendo a instancia ######
     ################################
 
-    # file_path = "src/teste1.txt"
     file_path = sys.argv[1]
     f = open(file_path, "r")
     

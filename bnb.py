@@ -18,19 +18,6 @@ def Integer(variable):
 def proximity(variable):
     return abs(variable - 0.5)
 
-# def getBranchVariableIndex(variable_value_list):
-#         value_list = []
-#         # lista de variaveis que possuem valores fracionarios
-#         for value in variable_value_list:
-#             if (value - int(value)) != 0:
-#                 value_list.append(value)
-
-#         print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
-
-#         # escolhe a variavel fracionaria mais proxima de 0,5
-#         branch_variable = min(value_list, key=proximity)
-#         return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
-
 
 class Node():
     def __init__(self, model):
@@ -55,12 +42,6 @@ class Node():
         branch_variable = min(value_list, key=proximity)
         
         return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
-
-    # def getVariableValueList(self):
-    #     variable_value_list = []
-    #     for i in range(len(self.model.vars)):
-    #         variable_value_list.append(self.model.var_by_name(f"x_{i+1}").x)
-    #     return variable_value_list
 
     def integralSolution(self):
         for i in range(len(self.model.vars)):
@@ -113,6 +94,7 @@ def solveProblem(baseModel):
 
     root = Node(baseModel)
     best_node = Node(baseModel)
+    upper_bound = 0
     lower_bound = 0
 
     tree = []
@@ -128,6 +110,7 @@ def solveProblem(baseModel):
         # save(node.model, "modelo1.lp")
         print("***********************************************************************************************")
         node.solve()
+        tree.remove(node)
 
         print("\n\nRestricoes do pai:")
         for i in node.model.constrs:
@@ -135,26 +118,30 @@ def solveProblem(baseModel):
 
         print("\n\nVariaveis do pai:")
         for i in node.model.vars:
-            print(i.x)
+            print(f"{i} = {i.x}")
 
         if node.state == OptimizationStatus.OPTIMAL:
+            
+            # tentamos atualizar o upper_bound
+            if node.model.objective_value > upper_bound:            
+                print(f"Atualizamos o upper bound para {node.model.objective_value}")
+                upper_bound = node.model.objective_value
+                
             # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value > lower_bound:
                 print(f"Atualizamos o lower bound para {node.model.objective_value}")
                 lower_bound = float(node.model.objective_value)
-                best_node.model = node.model.copy()
-
+                best_node = Node(node.model.copy())
+                best_node.model.vars = node.model.vars
 
         # se podar for possivel, a gente poda(tira esse no da lista de nos)
         if node.toPrune(best_node.model.objective_value):
             print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
-            tree.remove(node)
+            # tree.remove(node)
             
         # se nao puder podar ele, cria dois filhos e inserimos os dois na lista de nos
         else:       
             # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0,5)
-            # variable_value_list = node.getVariableValueList()
-            # branch_variable = getBranchVariableIndex(variable_value_list)
             branch_variable = node.getBranchVariableIndex()
             print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable]}")
 
@@ -175,9 +162,21 @@ def solveProblem(baseModel):
                 print(i)
             
             # remove o no atual pois ja resolvemos ele
-            tree.remove(node)
+            # tree.remove(node)
 
         print(f"Valor da solucao do pai = {node.model.objective_value}")
         
-    # quando todos no da arvore estiverem fechados, mostramos a melhor solucao encontrada
-    print(f"\n\n-> Custo da melhor solucao encontrada = {lower_bound:.4f}\n")
+        
+        
+    # quando todos nos da arvore estiverem fechados, mostramos a melhor solucao viavel encontrada para o problema
+    print("\n\n############################################################################")
+    print(f"A solucao viavel encontrada esta no maximo a {(upper_bound - lower_bound):.2f} unidades de custo de distancia da melhor solucao viavel do problema")
+    print("Restricoes da melhor solucao encontrada:")
+    for i in best_node.model.constrs:
+        print(i)
+    print("Variaveis da melhor solucao viavel encontrada:")
+    for i in best_node.model.vars:
+        print(f"{i} = {i.x}")
+    print(f"Custo da melhor solucao viavel encontrada = {lower_bound:.2f}")
+    print("############################################################################")
+    

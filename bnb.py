@@ -107,10 +107,9 @@ def solveProblem(baseModel):
         elif choice == 2:
             node = tree[-1] # estrategia de busca em profundidade, vamos pelo ultimo da lista de nos (DFS)
         
-        # save(node.model, "modelo1.lp")
         print("***********************************************************************************************")
         node.solve()
-        tree.remove(node)
+        tree.remove(node) # remove o no atual pois ja resolvemos ele
 
         print("\n\nRestricoes do pai:")
         for i in node.model.constrs:
@@ -120,6 +119,7 @@ def solveProblem(baseModel):
         for i in node.model.vars:
             print(f"{i} = {i.x}")
 
+        # se a solucao for viavel
         if node.state == OptimizationStatus.OPTIMAL:
             
             # tentamos atualizar o upper_bound
@@ -134,13 +134,9 @@ def solveProblem(baseModel):
                 best_node = Node(node.model.copy())
                 best_node.model.vars = node.model.vars
 
-        # se podar for possivel, a gente poda(tira esse no da lista de nos)
-        if node.toPrune(best_node.model.objective_value):
-            print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
-            # tree.remove(node)
-            
         # se nao puder podar ele, cria dois filhos e inserimos os dois na lista de nos
-        else:       
+        if not node.toPrune(best_node.model.objective_value):
+
             # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0,5)
             branch_variable = node.getBranchVariableIndex()
             print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable]}")
@@ -160,13 +156,11 @@ def solveProblem(baseModel):
             print("\nRestricoes do filho 2:")
             for i in right_node.model.constrs:
                 print(i)
-            
-            # remove o no atual pois ja resolvemos ele
-            # tree.remove(node)
+        else:
+            print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
 
         print(f"Valor da solucao do pai = {node.model.objective_value}")
-        
-        
+
         
     # quando todos nos da arvore estiverem fechados, mostramos a melhor solucao viavel encontrada para o problema
     print("\n\n############################################################################")

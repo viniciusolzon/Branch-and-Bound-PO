@@ -1,7 +1,6 @@
 # importação do pacote mip
 from mip import *
 import numpy as np
-import sys
 
 # salva modelo em arquivo lp, e mostra o conteúdo
 def save(model, filename):
@@ -10,6 +9,8 @@ def save(model, filename):
         print(f.read())
 
 def Integer(variable):
+    # 1 - (1) = 0 -> é inteira
+    # 0.58 - (0) = 0.58 -> não é inteira
     if (variable - int(variable)) == 0:
         return True
     else:
@@ -21,8 +22,8 @@ def proximity(variable):
 
 class Node():
     def __init__(self, model):
-        self.model = model
-        self.status = 0
+        self.model = model # um nó sempre vai ter um modelo
+        self.state = 0 # pra falar se a solução é viável ou não, etc.
 
     def getBranchVariableIndex(self):
         # lista de variaveis do problema
@@ -39,9 +40,9 @@ class Node():
         print(f"LISTA DE VARIAVEIS FRACIONARIAS A SEREM ESCOLHIDAS: ", value_list)
         
         # escolhe a variavel fracionaria mais proxima de 0,5
-        branch_variable = min(value_list, key=proximity)
+        branch_variable_index = min(value_list, key = proximity)
         
-        return variable_value_list.index(branch_variable) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
+        return variable_value_list.index(branch_variable_index) # caso tenha mais de uma variável com o mesmo valor estamos escolhendo a de menor índice
 
     def integralSolution(self):
         for i in range(len(self.model.vars)):
@@ -58,7 +59,7 @@ class Node():
 
     def toPrune(self, lb):
         # INVIABILIDADE
-        # se a solução for inviavels podamos
+        # se a solução for inviavel podamos
         if self.isInfeasible():
             print("Solucao e inviavel")
             return True
@@ -81,7 +82,8 @@ class Node():
     def solve(self):
         status = self.model.optimize()
         self.state = status
-        if status != OptimizationStatus.OPTIMAL:
+
+        if status != OptimizationStatus.OPTIMAL: # se o nó em questão não é inviável
             return
 
 
@@ -92,85 +94,68 @@ def solveProblem(baseModel):
     choice = 1
     choice = int(input("-> "))
 
-    root = Node(baseModel)
-    best_node = Node(baseModel)
+    root = Node(baseModel) # cria nó raiz com o problema inicial
+    best_node = Node(baseModel) # cria um nó pra guardar o melhor nó
     upper_bound = 0
     lower_bound = 0
 
-    tree = []
-    tree.append(root)
+    tree = [] # lista de nós
+    tree.append(root) # adiciona a raíz
 
     # branch and bound
-    while len(tree) != 0:
+    while len(tree) != 0: # enquanto a árvore possuir nós abertos
         if choice == 1:
             node = tree[0] # estrategia de busca em largura, vamos pelo primeiro da lista de nos (BFS)
         elif choice == 2:
             node = tree[-1] # estrategia de busca em profundidade, vamos pelo ultimo da lista de nos (DFS)
         
         print("***********************************************************************************************")
-        node.solve()
+        node.solve() # resolve o nó 
         tree.remove(node) # remove o no atual pois ja resolvemos ele
 
-        print("\n\nRestricoes do pai:")
-        for i in node.model.constrs:
-            print(i)
-
-        print("\n\nVariaveis do pai:")
-        for i in node.model.vars:
-            print(f"{i} = {i.x}")
-
-        # se a solucao for viavel
-        if node.state == OptimizationStatus.OPTIMAL:
-            
-            # tentamos atualizar o upper_bound
-            if node.model.objective_value > upper_bound:            
-                print(f"Atualizamos o upper bound para {node.model.objective_value}")
-                upper_bound = node.model.objective_value
-                
+        if node.state == OptimizationStatus.OPTIMAL: # se a solucao for viável
             # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value > lower_bound:
                 print(f"Atualizamos o lower bound para {node.model.objective_value}")
                 lower_bound = float(node.model.objective_value)
+
                 best_node = Node(node.model.copy())
                 best_node.model.vars = node.model.vars
 
-        # se nao puder podar ele, cria dois filhos e inserimos os dois na lista de nos
+        # se nao puder podar ele, gera dois filhos e inserimos os dois na lista de nós
         if not node.toPrune(best_node.model.objective_value):
 
-            # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0,5)
-            branch_variable = node.getBranchVariableIndex()
-            print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable]}")
+            # escolhe a variavel pra ser ramificada (de valor fracionario mais proximo de 0.5)
+            branch_variable_index = node.getBranchVariableIndex()
+            print(f"VARIAVEL A SER RAMIFICADA PARA O NO ATUAL: {node.model.vars[branch_variable_index]}")
 
             # primeiro filho iguala essa variavel a 0
             left_node = Node(node.model.copy())
-            left_node.model += left_node.model.vars[branch_variable] == 0
+            left_node.model += left_node.model.vars[branch_variable_index] == 0
             tree.append(left_node)
-            print("\n\nRestricoes do filho 1:")
-            for i in left_node.model.constrs:
-                print(i)
 
             # segundo filho iguala essa variavel a 1
             right_node = Node(node.model.copy())
-            right_node.model += right_node.model.vars[branch_variable] == 1
+            right_node.model += right_node.model.vars[branch_variable_index] == 1
             tree.append(right_node)
-            print("\nRestricoes do filho 2:")
-            for i in right_node.model.constrs:
-                print(i)
+
         else:
             print("VAMOS PODAR (ESSE NO NAO VAI GERAR FILHOS)")
 
         print(f"Valor da solucao do pai = {node.model.objective_value}")
-
         
-    # quando todos nos da arvore estiverem fechados, mostramos a melhor solucao viavel encontrada para o problema
+    # quando todos nós da arvore estiverem podados, mostramos a melhor solucao viável encontrada para o problema
     print("\n\n############################################################################")
     print(f"A solucao viavel encontrada esta no maximo a {(upper_bound - lower_bound):.2f} unidades de custo de distancia da melhor solucao viavel do problema")
+    
     print("Restricoes da melhor solucao encontrada:")
     for i in best_node.model.constrs:
         print(i)
+
     print("Variaveis da melhor solucao viavel encontrada:")
     for i in best_node.model.vars:
         print(f"{i} = {i.x}")
+
     print(f"Custo da melhor solucao viavel encontrada = {lower_bound:.2f}")
     print("############################################################################")
     

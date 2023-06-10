@@ -23,7 +23,7 @@ def main():
     ####### Criando o modelo #######
     ################################
 
-    model = Model(name= "Branch and Bound pai", sense=MAXIMIZE, solver_name=CBC)
+    model = Model(name = "Branch and Bound pai", sense = MAXIMIZE, solver_name = CBC)
 
     x = [model.add_var(var_type=CONTINUOUS, lb=0.0, ub = 1.0, name=f"x_{i+1}") for i in range(num_variaveis)]
     
@@ -33,7 +33,8 @@ def main():
         model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
     
     # save(model, "modelo1.lp")
-    
+    # input()
+
     solveProblem(model)
 
 if __name__ == "__main__":

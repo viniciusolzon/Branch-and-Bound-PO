@@ -1,6 +1,5 @@
 # importação do pacote mip
 from mip import *
-import numpy as np
 
 # salva modelo em arquivo lp, e mostra o conteúdo
 def save(model, filename):

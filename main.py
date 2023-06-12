@@ -32,9 +32,6 @@ def main():
     for i in range(num_restricoes):
         model += xsum(int(restricoes[i][j]) * x[j] for j in range(num_variaveis)) <= int(restricoes[i][-1])
     
-    # save(model, "modelo1.lp")
-    # input()
-
     solveProblem(model)
 
 if __name__ == "__main__":

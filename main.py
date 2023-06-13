@@ -1,3 +1,5 @@
+# VINICIUS FREITAS E VINICIUS VIERI
+
 import sys
 from bnb import *
 
@@ -17,7 +19,7 @@ def main():
     
     restricoes = []
     for i in range(num_restricoes):
-        restricoes.append(f.readline().split()) 
+        restricoes.append(f.readline().split())
 
     ################################
     ####### Criando o modelo #######
@@ -25,7 +27,7 @@ def main():
 
     model = Model(name = "Branch and Bound pai", sense = MAXIMIZE, solver_name = CBC)
 
-    x = [model.add_var(var_type=CONTINUOUS, lb=0.0, ub = 1.0, name=f"x_{i+1}") for i in range(num_variaveis)]
+    x = [model.add_var(var_type=CONTINUOUS, lb = 0.0, ub = 1.0, name=f"x_{i+1}") for i in range(num_variaveis)]
     
     model.objective = xsum(int(funcao_obj[i]) * x[i] for i in range(len(funcao_obj)))
 

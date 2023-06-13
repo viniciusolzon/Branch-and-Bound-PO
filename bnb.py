@@ -1,3 +1,5 @@
+# VINICIUS FREITAS E VINICIUS VIERI
+
 # importação do pacote mip
 from mip import *
 
@@ -18,15 +20,6 @@ def Integer(variable):
 def proximity(variable):
     return abs(variable - 0.5)
 
-def show_solution(node):
-    print("Restricoes da melhor solucao encontrada:")
-    for i in node.model.constrs:
-        print(i)
-
-    print("Variaveis da melhor solucao viavel encontrada:")
-    for i in node.model.vars:
-        print(f"{i} = {i.x}")
-
 class Node():
     def __init__(self, model):
         self.model = model # um nó sempre vai ter um modelo
@@ -41,7 +34,7 @@ class Node():
         value_list = []
         # lista de variaveis que possuem valores fracionarios
         for variable in variable_value_list:
-            if (variable - int(variable)) != 0:
+            if not (Integer(variable)):
                 value_list.append(variable)
 
         # escolhe a variavel fracionaria mais proxima de 0,5
@@ -51,8 +44,7 @@ class Node():
 
     def integralSolution(self):
         for i in range(len(self.model.vars)):
-            result = self.model.vars[i].x - int(self.model.vars[i].x)
-            if result != 0:
+            if not Integer(self.model.vars[i].x):
                 return False
         return True
 
@@ -63,17 +55,14 @@ class Node():
 
     def toPrune(self, lb):
         # INVIABILIDADE
-        # se a solução for inviavel podamos
         if self.isInfeasible():
             return True
        
         # INTEGRALIDADE
-        # se a solução for inteira podamos
         if self.integralSolution():
             return True
     
         # LIMITANTE
-        # se a solução for inteira e possuir um valor menor do que o lower bound atual podamos
         if self.model.objective_value <= lb:
             return True
 
@@ -81,7 +70,6 @@ class Node():
         self.model.verbose = 0
         status = self.model.optimize()
         self.state = status
-
 
 def solveProblem(baseModel):
     print("\t\t##### Branch and Bound #####")
@@ -91,7 +79,6 @@ def solveProblem(baseModel):
     choice = int(input("-> "))
 
     root = Node(baseModel) # cria nó raiz com o problema inicial
-    best_node = Node(baseModel) # cria um nó pra guardar o melhor nó
     lower_bound = 0
 
     tree = [] # lista de nós
@@ -108,12 +95,8 @@ def solveProblem(baseModel):
         tree.remove(node) # remove o no atual pois ja resolvemos ele
 
         if node.state == OptimizationStatus.OPTIMAL: # se a solucao for viável
-            # tentamos atualizar o lower_bound
             if node.integralSolution() and node.model.objective_value >= lower_bound:
                 lower_bound = float(node.model.objective_value)
-
-                best_node = Node(node.model.copy())
-                best_node.model.vars = node.model.vars
 
         # se nao puder podar ele, gera dois filhos e inserimos os dois na lista de nós
         if not node.toPrune(lower_bound):
@@ -133,6 +116,4 @@ def solveProblem(baseModel):
 
 
     # quando todos nós da arvore estiverem podados, mostramos a melhor solucao viável encontrada para o problema
-    
-    # show_solution(best_node)
     print(f"\nCusto da melhor solucao viavel encontrada = {lower_bound:.2f}")
